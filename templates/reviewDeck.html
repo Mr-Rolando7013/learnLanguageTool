@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Review Session</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            margin: 0;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .review-container {
+            width: 100%;
+            max-width: 600px;
+            background: #020617;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .word-review {
+            display: none;
+        }
+
+        .word-review.active {
+            display: block;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .prompt {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        button {
+            background: #1e293b;
+            color: #e5e7eb;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: #334155;
+        }
+
+        .progress {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="review-container">
+
+{% for word in words %}
+<div class="word-review {% if loop.first %}active{% endif %}" data-word-id="{{ word.id }}">
+
+    <div class="progress">
+        Card <span class="currentStep">1</span> / <span class="totalSteps">9</span>
+    </div>
+
+    <!-- TRANSLATION -->
+    <div class="step active">
+        <h2>Translation</h2>
+        <div class="prompt">
+            Translate into Romanian:
+            <br><strong>{{ word.word }}</strong>
+        </div>
+        <input type="text" data-step="translation1" placeholder="Your answer..." />
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- Sentence 1 -->
+    <div class="step">
+        <h2>Sentence translation</h2>
+        <div class="prompt">
+            Complete the sentence:
+            <br><strong>{{ word.sentence1 }}</strong>
+        </div>
+        <input type="text" data-step="translation2" placeholder="Missing word..." />
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- MCQ Exercise 1 -->
+    <div class="step">
+        <h2>MCQ Exercise 1</h2>
+        <div class="prompt">
+            Choose the correct verb:
+            <br><strong>MCQ Exercise 1</strong>
+        </div>
+
+        <label><input type="radio" name="mcq-{{ word.id }}" value="merg" data-step="mcq1"> merg</label><br>
+        <label><input type="radio" name="mcq-{{ word.id }}" value="merge" data-step="mcq1"> merge</label><br>
+        <label><input type="radio" name="mcq-{{ word.id }}" value="mergi" data-step="mcq1"> mergi</label><br>
+
+        <br>
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- MCQ Exercise 2 -->
+    <div class="step">
+        <h2>MCQ Exercise 2</h2>
+        <div class="prompt">
+            Choose the correct verb:
+            <br><strong>MCQ Exercise 2</strong>
+        </div>
+
+        <label><input type="radio" name="mcq-{{ word.id }}" value="merg" data-step="mcq2"> merg</label><br>
+        <label><input type="radio" name="mcq-{{ word.id }}" value="merge" data-step="mcq2"> merge</label><br>
+        <label><input type="radio" name="mcq-{{ word.id }}" value="mergi" data-step="mcq2"> mergi</label><br>
+
+        <br>
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- Sentence 2 -->
+    <div class="step">
+        <h2>Sentence translation</h2>
+        <div class="prompt">
+            Complete the sentence:
+            <br><strong>{{ word.sentence2 }}</strong>
+        </div>
+        <input type="text" data-step="translation3" placeholder="Missing word..." />
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- Cloze 1 -->
+    <div class="step">
+        <h2>Cloze exercise 1</h2>
+        <div class="prompt">
+            Complete the exercise:
+            <br><strong>Cloze exercise 1</strong>
+        </div>
+        <input type="text" data-step="cloze1" placeholder="Missing word..." />
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- SENTENCE 3 -->
+    <div class="step">
+        <h2>Sentence 3</h2>
+        <div class="prompt">
+            Complete the sentence 3:
+            <br><strong>{{ word.sentence3 }}</strong>
+        </div>
+        <input type="text" data-step="translation4" placeholder="Missing word..." />
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- Cloze 2 -->
+    <div class="step">
+        <h2>Cloze exercise 2</h2>
+        <div class="prompt">
+            Complete the exercise:
+            <br><strong>Cloze exercise 2</strong>
+        </div>
+        <input type="text" data-step="cloze2" placeholder="Missing word..." />
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="nextStep(this)">Next</button>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+        <h2>Writing</h2>
+        <div class="prompt">
+            Write a sentence using <strong>{{ word.word }}</strong>.
+        </div>
+        <textarea rows="4" data-step="writing1" placeholder="Your sentence..."></textarea>
+        <button onclick="prevStep(this)">Previous</button>
+        <button onclick="finishReview(this)">Finish</button>
+    </div>
+
+    <!-- FINISH -->
+    <div class="step center">
+        <h2>Review Complete 🎉</h2>
+        <p>Your answers have been recorded.</p>
+        <p><strong>Score:</strong> <span class="score">–</span>%</p>
+        <button onclick="submitResults(this)">Next Word</button>
+    </div>
+
+</div>
+{% endfor %}
+
+</div>
+
+<script>
+function collectWordData(wordDiv) {
+    const data = {
+        word_id: wordDiv.dataset.wordId,
+        answers: {},
+        score: wordDiv.querySelector(".score")?.textContent || null
+    };
+
+    wordDiv.querySelectorAll("[data-step]").forEach(input => {
+        const step = input.dataset.step;
+
+        if (input.type === "radio") {
+            if (input.checked) {
+                data.answers[step] = input.value;
+            }
+        } else {
+            data.answers[step] = input.value;
+        }
+    });
+
+    return data;
+}
+
+function nextStep(button) {
+    const step = button.closest(".step");
+    const word = button.closest(".word-review");
+    const steps = word.querySelectorAll(".step");
+
+    const index = [...steps].indexOf(step);
+    step.classList.remove("active");
+
+    if (index + 1 < steps.length) {
+        steps[index + 1].classList.add("active");
+        word.querySelector(".currentStep").textContent = index + 2;
+    }
+}
+
+function prevStep(button) {
+    const step = button.closest(".step");
+    const word = button.closest(".word-review");
+    const steps = word.querySelectorAll(".step");
+
+    const index = [...steps].indexOf(step);
+    if (index === 0) return;
+
+    step.classList.remove("active");
+    steps[index - 1].classList.add("active");
+
+    word.querySelector(".currentStep").textContent = index;
+}
+
+function finishReview(button) {
+    const step = button.closest(".step");
+    const word = button.closest(".word-review");
+    const steps = word.querySelectorAll(".step");
+
+    step.classList.remove("active");
+    steps[steps.length - 1].classList.add("active");
+
+    word.querySelector(".score").textContent =
+        Math.floor(Math.random() * 40) + 60;
+}
+
+async function submitResults(button) {
+    const word = button.closest(".word-review");
+    const payload = collectWordData(word);
+
+    try {
+        await fetch("/review/submit", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+    } catch (err) {
+        console.error("Failed to submit review", err);
+    }
+
+    // move to next word
+    word.classList.remove("active");
+    const nextWord = word.nextElementSibling;
+
+    if (nextWord) {
+        nextWord.classList.add("active");
+        nextWord.querySelector(".step").classList.add("active");
+    } else {
+        alert("Session complete 🎉");
+    }
+}
+</script>
+
+</body>
+</html>

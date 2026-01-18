@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Deck – Review</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #020617;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 340px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #cbd5f5;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: none;
+            background: #1e293b;
+            color: #e5e7eb;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.7rem;
+            border-radius: 8px;
+            border: none;
+            background: #2563eb;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .back {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .back a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Start Review</h1>
+
+        <form action="/review/start" method="get">
+            <label for="deck">Choose a deck</label>
+            <select id="deck" name="deck_id">
+                {% for deck in decks %}
+                <option value="{{ deck.id }}">{{ deck.name }}</option>
+                {% endfor %}
+            </select>
+
+            <button type="submit">Begin Review</button>
+        </form>
+
+        <div class="back">
+            <a href="/">← Back to Menu</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Deck</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #020617;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 360px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+            color: #cbd5f5;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: none;
+            background: #1e293b;
+            color: #e5e7eb;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.7rem;
+            border-radius: 8px;
+            border: none;
+            background: #22c55e;
+            color: #022c22;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #16a34a;
+        }
+
+        .back {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .back a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: -0.6rem;
+            margin-bottom: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create New Deck</h1>
+
+        <form action="/decks/create" method="post">
+            <label for="name">Deck name *</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Romanian Basics" required>
+            <div class="hint">Must be unique</div>
+
+            <label for="description">Description</label>
+            <textarea id="description" name="description"
+                placeholder="Optional description (e.g. core vocabulary, A1 level)"></textarea>
+
+            <button type="submit">Create Deck</button>
+        </form>
+
+        <div class="back">
+            <a href="/decks">← Back to My Decks</a>
+        </div>
+    </div>
+</body>
+</html>

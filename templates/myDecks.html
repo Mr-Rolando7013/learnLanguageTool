@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Decks</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: #e5e7eb;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #020617;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 380px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .deck {
+            background: #1e293b;
+            padding: 0.8rem;
+            border-radius: 8px;
+            margin-bottom: 0.6rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .deck span {
+            font-size: 0.95rem;
+        }
+
+        .deck a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .deck a:hover {
+            text-decoration: underline;
+        }
+
+        .create {
+            margin-top: 1.5rem;
+            border-top: 1px solid #334155;
+            padding-top: 1.2rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.4rem;
+            color: #cbd5f5;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.6rem;
+            border-radius: 8px;
+            border: none;
+            background: #1e293b;
+            color: #e5e7eb;
+            margin-bottom: 0.8rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.65rem;
+            border-radius: 8px;
+            border: none;
+            background: #22c55e;
+            color: #022c22;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #16a34a;
+        }
+
+        .back {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .back a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Decks</h1>
+
+        <!-- Existing decks -->
+         {% for deck in decks %}
+         <div class="deck">
+            <span>{{ deck.name }}</span>
+            <a href="/deck_detail/{{ deck.id }}">Open</a>
+         </div>
+         {% endfor %} 
+        
+        <!-- Create new deck -->
+        <div class="create">
+            <form action="/decks/create" method="post">
+                <label for="name">Create new deck</label>
+                <input type="text" id="name" name="deck_name" placeholder="Deck name" required>
+                <button type="submit">Create Deck</button>
+            </form>
+        </div>
+
+        <div class="back">
+            <a href="/">← Back to Menu</a>
+        </div>
+    </div>
+</body>
+</html>
