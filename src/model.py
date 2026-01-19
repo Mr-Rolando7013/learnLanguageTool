@@ -10,6 +10,51 @@ engine = create_engine(DATABASE_URL, echo=False)
 
 Base = declarative_base()
 
+
+deck_words = Table(
+    'deck_words',
+    Base.metadata,
+    Column('deck_id', Integer, ForeignKey('decks.id'), primary_key=True),
+    Column('word_id', Integer, ForeignKey('words.id'), primary_key=True),
+)
+
+mcq_exercise_words = Table(
+    'mcq_exercise_words',
+    Base.metadata,
+    Column('word_id', Integer, ForeignKey('words.id'), primary_key=True),
+    Column('exercise_id', Integer, ForeignKey('exercises.id'), primary_key=True)
+)
+
+writing_exercise_words = Table(
+    'writing_exercise_words',
+    Base.metadata,
+    Column('word_id', Integer, ForeignKey('words.id'), primary_key=True),
+    Column('exercise_id', Integer, ForeignKey('writing_exercises.id'), primary_key=True)
+)
+
+cloze_exercise_words = Table(
+    'cloze_exercise_words',
+    Base.metadata,
+    Column('word_id', Integer, ForeignKey('words.id'), primary_key=True),
+    Column('exercise_id', Integer, ForeignKey('cloze_exercises.id'), primary_key=True)
+)
+
+class ClozeExercise(Base):
+    __tablename__ = 'cloze_exercises'
+
+    id = Column(Integer, primary_key=True)
+    sentence = Column(String, nullable=False)
+    answer = Column(String, nullable=False)
+
+    word = relationship(
+        "Word",
+        secondary="cloze_exercise_words",
+        backref="cloze_exercises"
+    )
+
+    def __repr__(self):
+        return f"<ClozeExercise(id={self.id}, sentence='{self.sentence}', answer='{self.answer}')>"
+
 class WritingExercise(Base):
     __tablename__ = 'writing_exercises'
     
@@ -17,6 +62,12 @@ class WritingExercise(Base):
     prompt = Column(String, nullable=False)
     answer = Column(String, nullable=False)
     date_created = Column(String, nullable=False)
+
+    word = relationship(
+        "Word",
+        secondary="writing_exercise_words",
+        backref="writing_exercises"
+    )
 
     def __repr__(self):
         return f"<WritingExercise(id={self.id}, prompt='{self.prompt}', answer='{self.answer}', date_created='{self.date_created}')>"
@@ -33,15 +84,14 @@ class MultipleChoiceExercise(Base):
     correct_answer = Column(String, nullable=False)
     date_created = Column(String, nullable=False)
 
+    word = relationship(
+        "Word",
+        secondary="mcq_exercise_words",
+        backref="mcq_exercises"
+    )        
+
     def __repr__(self):
         return f"<MultipleChoiceExercise(id={self.id}, question='{self.question}', correct_answer='{self.correct_answer}', date_created='{self.date_created}')>"
-
-deck_words = Table(
-    'deck_words',
-    Base.metadata,
-    Column('deck_id', Integer, ForeignKey('decks.id'), primary_key=True),
-    Column('word_id', Integer, ForeignKey('words.id'), primary_key=True),
-)
 
 class Word(Base):
     __tablename__ = 'words'
@@ -56,8 +106,6 @@ class Word(Base):
     date_created = Column(String, nullable=False)
     last_date_reviewed = Column(String, nullable=True)
     isLearned = Column(Integer, default=0)
-    multiple_choice_exercise_id = Column(Integer, nullable=True)
-    writing_exercise_id = Column(Integer, nullable=True)
     ef = Column(Integer, default=2.5)
     interval = Column(Integer, default=1)
 
@@ -65,6 +113,24 @@ class Word(Base):
         "Deck",
         secondary=deck_words,
         back_populates="words"
+    )
+
+    mcq = relationship(
+        "MultipleChoiceExercise",
+        secondary=mcq_exercise_words,
+        backref="words"
+    )
+
+    writing = relationship(
+        "WritingExercise",
+        secondary=writing_exercise_words,
+        backref="words"
+    )
+
+    cloze = relationship(
+        "ClozeExercise",
+        secondary=cloze_exercise_words,
+        backref="words"
     )
 
     def __repr__(self):

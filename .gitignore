@@ -208,3 +208,5 @@ __marimo__/
 myenv/
 info.db
 __pycache__/
+.env
+pyproject.toml

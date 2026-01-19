@@ -1,8 +1,16 @@
-from model import *
+from dotenv import load_dotenv
+import os
+from pathlib import Path
+
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(env_path)
+
+from src.model import *
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from datetime import datetime
+from reviewLogic import *
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates')
 
 @app.route('/')
 def index():
@@ -79,6 +87,10 @@ def start_review():
     deck = getDeckById(deck_id)
 
     words = [word for word in deck.words if word.isLearned == 0 and word.last_date_reviewed != datetime.now().strftime('%Y-%m-%d')]
+
+    for word in words:
+        generate_mcq_exercise(word)
+
 
     return render_template("reviewDeck.html", words=words, deck=deck)
 
