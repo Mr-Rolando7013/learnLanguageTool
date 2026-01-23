@@ -90,7 +90,6 @@
 
 {% for word in words %}
 <div class="word-review {% if loop.first %}active{% endif %}" data-word-id="{{ word.id }}">
-
     <div class="progress">
         Card <span class="currentStep">1</span> / <span class="totalSteps">9</span>
     </div>
@@ -113,39 +112,34 @@
             Complete the sentence:
             <br><strong>{{ word.sentence1 }}</strong>
         </div>
-        <input type="text" data-step="translation2" placeholder="Missing word..." />
+        <input type="text" data-step="sentence1" placeholder="Missing word..." />
         <button onclick="prevStep(this)">Previous</button>
         <button onclick="nextStep(this)">Next</button>
     </div>
 
     <!-- MCQ Exercise 1 -->
-    <div class="step">
+    <div class="step mcq-step" data-mcq="mcq1">
         <h2>MCQ Exercise 1</h2>
         <div class="prompt">
             Choose the correct verb:
             <br><strong>MCQ Exercise 1</strong>
         </div>
 
-        <label><input type="radio" name="mcq-{{ word.id }}" value="merg" data-step="mcq1"> merg</label><br>
-        <label><input type="radio" name="mcq-{{ word.id }}" value="merge" data-step="mcq1"> merge</label><br>
-        <label><input type="radio" name="mcq-{{ word.id }}" value="mergi" data-step="mcq1"> mergi</label><br>
-
+        <div class="options"></div>
         <br>
         <button onclick="prevStep(this)">Previous</button>
         <button onclick="nextStep(this)">Next</button>
     </div>
 
     <!-- MCQ Exercise 2 -->
-    <div class="step">
+    <div class="step mcq-step" data-mcq="mcq2">
         <h2>MCQ Exercise 2</h2>
         <div class="prompt">
             Choose the correct verb:
             <br><strong>MCQ Exercise 2</strong>
         </div>
 
-        <label><input type="radio" name="mcq-{{ word.id }}" value="merg" data-step="mcq2"> merg</label><br>
-        <label><input type="radio" name="mcq-{{ word.id }}" value="merge" data-step="mcq2"> merge</label><br>
-        <label><input type="radio" name="mcq-{{ word.id }}" value="mergi" data-step="mcq2"> mergi</label><br>
+        <div class="options"></div>
 
         <br>
         <button onclick="prevStep(this)">Previous</button>
@@ -159,19 +153,19 @@
             Complete the sentence:
             <br><strong>{{ word.sentence2 }}</strong>
         </div>
-        <input type="text" data-step="translation3" placeholder="Missing word..." />
+        <input type="text" data-step="sentence2" placeholder="Missing word..." />
         <button onclick="prevStep(this)">Previous</button>
         <button onclick="nextStep(this)">Next</button>
     </div>
 
     <!-- Cloze 1 -->
-    <div class="step">
+    <div class="step cloze-step" data-cloze="cloze1">
         <h2>Cloze exercise 1</h2>
         <div class="prompt">
             Complete the exercise:
             <br><strong>Cloze exercise 1</strong>
         </div>
-        <input type="text" data-step="cloze1" placeholder="Missing word..." />
+        <input type="text" data-step="cloze1" data-type="cloze" />
         <button onclick="prevStep(this)">Previous</button>
         <button onclick="nextStep(this)">Next</button>
     </div>
@@ -183,13 +177,13 @@
             Complete the sentence 3:
             <br><strong>{{ word.sentence3 }}</strong>
         </div>
-        <input type="text" data-step="translation4" placeholder="Missing word..." />
+        <input type="text" data-step="sentence3" placeholder="Missing word..." />
         <button onclick="prevStep(this)">Previous</button>
         <button onclick="nextStep(this)">Next</button>
     </div>
 
     <!-- Cloze 2 -->
-    <div class="step">
+    <div class="step cloze-step" data-cloze="cloze2">
         <h2>Cloze exercise 2</h2>
         <div class="prompt">
             Complete the exercise:
@@ -201,12 +195,12 @@
     </div>
 
     <!-- STEP 4 -->
-    <div class="step">
+    <div class="step writing-step" data-writing="writing1">
         <h2>Writing</h2>
         <div class="prompt">
             Write a sentence using <strong>{{ word.word }}</strong>.
         </div>
-        <textarea rows="4" data-step="writing1" placeholder="Your sentence..."></textarea>
+        <textarea rows="4" data-step="writing1" data-type="writing" placeholder="Your sentence..."></textarea>
         <button onclick="prevStep(this)">Previous</button>
         <button onclick="finishReview(this)">Finish</button>
     </div>
@@ -225,26 +219,134 @@
 </div>
 
 <script>
-function collectWordData(wordDiv) {
-    const data = {
-        word_id: wordDiv.dataset.wordId,
-        answers: {},
-        score: wordDiv.querySelector(".score")?.textContent || null
-    };
 
-    wordDiv.querySelectorAll("[data-step]").forEach(input => {
-        const step = input.dataset.step;
+async function loadMCQs(wordDiv) {
+    if (wordDiv.dataset.mcqsLoaded === "true") return;
 
-        if (input.type === "radio") {
-            if (input.checked) {
-                data.answers[step] = input.value;
-            }
-        } else {
-            data.answers[step] = input.value;
-        }
+    const wordId = wordDiv.dataset.wordId;
+    const res = await fetch(`/review/word/mcq/${wordId}`);
+    const mcqs = await res.json(); // array
+
+    wordDiv.querySelectorAll(".mcq-step").forEach((step, idx) => {
+        const mcq = mcqs[idx];
+        if (!mcq) return;
+
+        step.querySelector(".prompt strong").textContent = mcq.question;
+
+        const optionsDiv = step.querySelector(".options");
+        optionsDiv.innerHTML = "";
+
+        const options = [
+            mcq.option1,
+            mcq.option2,
+            mcq.option3,
+            mcq.option4
+        ];
+
+        options.forEach(opt => {
+            const id = crypto.randomUUID();
+
+            optionsDiv.innerHTML += `
+                <label>
+                    <input type="radio"
+                           name="mcq${idx + 1}-${wordId}"
+                           data-step="mcq${idx + 1}"
+                           data-type="mcq"
+                           data-question="${mcq.question.replace(/"/g, '&quot;')}"
+                           value="${opt}">
+                    ${opt}
+                </label><br>
+            `;
+        });
     });
 
-    return data;
+    wordDiv.dataset.mcqsLoaded = "true";
+}
+
+async function loadClozes(wordDiv) {
+    // Avoid re-loading if already done
+    if (wordDiv.dataset.clozesLoaded === "true") return;
+
+    const wordId = wordDiv.dataset.wordId;
+    const res = await fetch(`/review/word/cloze/${wordId}`);
+    const list = await res.json(); // Expecting an array of cloze exercises
+
+    // Map cloze exercises to their placeholders
+    const clozeMap = {
+        cloze1: list[0],
+        cloze2: list[1]
+    };
+
+    // Inject data into each cloze step
+    wordDiv.querySelectorAll(".cloze-step").forEach(step => {
+        const key = step.dataset.cloze;
+        const cloze = clozeMap[key];
+        if (!cloze) return;
+
+        // Set the question text
+        step.querySelector(".prompt strong").textContent = cloze.sentence;
+
+        // Update the input field dynamically
+        const input = step.querySelector(`input[data-step="${key}"]`);
+        if (!input) return;
+
+        input.placeholder = `Missing word: ${cloze.answer.length} letters`;
+
+        // Store metadata for submission
+        input.dataset.question = cloze.sentence;
+        input.dataset.exerciseId = cloze.id;
+        input.dataset.type = "cloze";
+    });
+
+    // Mark as loaded to prevent duplicate fetches
+    wordDiv.dataset.clozesLoaded = "true";
+}
+
+async function loadWriting(wordDiv) {
+    if (wordDiv.dataset.writingLoaded === "true") return;
+
+    const wordId = wordDiv.dataset.wordId;
+    const res = await fetch(`/review/word/writing/${wordId}`);
+    const list = await res.json();
+
+    const writing = list[0];
+    if (!writing) return;
+
+    const step = wordDiv.querySelector(".writing-step");
+
+    step.querySelector(".prompt strong").textContent = writing.prompt;
+
+    const textarea = step.querySelector(`textarea[data-step="writing1"]`);
+    textarea.dataset.question = writing.prompt;
+    textarea.dataset.exerciseId = writing.id;
+    textarea.dataset.type = "writing";
+
+    wordDiv.dataset.writingLoaded = "true";
+}
+
+function collectWordData(wordDiv) {
+    const responses = [];
+
+    wordDiv.querySelectorAll("[data-step]").forEach(input => {
+        let answer = null;
+
+        if (input.type === "radio") {
+            if (!input.checked) return;
+            answer = input.value;
+        } else {
+            answer = input.value;
+        }
+
+        responses.push({
+            question: input.dataset.question,
+            answer: answer
+        });
+    });
+
+    return {
+        word_id: wordDiv.dataset.wordId,
+        responses
+    };
 }
 
 function nextStep(button) {
@@ -256,8 +358,19 @@ function nextStep(button) {
     step.classList.remove("active");
 
     if (index + 1 < steps.length) {
-        steps[index + 1].classList.add("active");
+        const next = steps[index + 1];
+        next.classList.add("active");
         word.querySelector(".currentStep").textContent = index + 2;
+
+        if (next.classList.contains("mcq-step")) {
+            loadMCQs(word);
+        }
+        if (next.classList.contains("cloze-step")) {
+            loadClozes(word);
+        }
+        if (next.classList.contains("writing-step")) {
+            loadWriting(word);
+        }
     }
 }
 
@@ -289,16 +402,46 @@ function finishReview(button) {
 
 async function submitResults(button) {
     const word = button.closest(".word-review");
-    const payload = collectWordData(word);
+
+    // Collect all responses
+    const responses = [];
+    word.querySelectorAll("[data-step]").forEach(input => {
+        let answer = null;
+        if (input.type === "radio") {
+            if (!input.checked) return;
+            answer = input.value;
+        } else {
+            answer = input.value;
+        }
+
+        responses.push({
+            question: input.dataset.question || null,
+            answer: answer
+        });
+    });
+
+    // Calculate a random score for now
+    const score = Math.floor(Math.random() * 41) + 60; // 60-100
+
+    // Payload Flask expects
+    const payload = {
+        word_id: word.dataset.wordId,
+        answers: responses,
+        score: score
+    };
 
     try {
-        await fetch("/review/submit", {
+        const res = await fetch("/review/submit", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(payload)
         });
+
+        if (!res.ok) {
+            console.error("Server returned an error:", res.status);
+        }
     } catch (err) {
         console.error("Failed to submit review", err);
     }

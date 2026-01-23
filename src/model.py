@@ -45,6 +45,7 @@ class ClozeExercise(Base):
     id = Column(Integer, primary_key=True)
     sentence = Column(String, nullable=False)
     answer = Column(String, nullable=False)
+    isSolved = Column(Integer, default=0)
 
     word = relationship(
         "Word",
@@ -60,8 +61,9 @@ class WritingExercise(Base):
     
     id = Column(Integer, primary_key=True)
     prompt = Column(String, nullable=False)
-    answer = Column(String, nullable=False)
+    answer = Column(String, nullable=True)
     date_created = Column(String, nullable=False)
+    isSolved = Column(Integer, default=0)
 
     word = relationship(
         "Word",
@@ -83,6 +85,7 @@ class MultipleChoiceExercise(Base):
     option4 = Column(String, nullable=False)
     correct_answer = Column(String, nullable=False)
     date_created = Column(String, nullable=False)
+    iSolved = Column(Integer, default=0)
 
     word = relationship(
         "Word",
@@ -101,8 +104,11 @@ class Word(Base):
     dictionary_definition = Column(String, nullable=False)
     translation = Column(String, nullable=False)
     sentence1 = Column(String, nullable=False)
+    sentence1_translation = Column(String, nullable=False)
     sentence2 = Column(String, nullable=True)
+    sentence2_translation = Column(String, nullable=True)
     sentence3 = Column(String, nullable=True)
+    sentence3_translation = Column(String, nullable=True)
     date_created = Column(String, nullable=False)
     last_date_reviewed = Column(String, nullable=True)
     isLearned = Column(Integer, default=0)
@@ -185,3 +191,35 @@ def deleteWordFromDeck(deckId, wordId):
     if deck and word:
         deck.words.remove(word)
         session.commit()
+
+def getWordById(word_id):
+    return session.query(Word).filter_by(id=word_id).first()
+
+def find_mcq_exercise_by_word(word, mcq_word):
+    for mcq in word.mcq_exercises:
+        if mcq.question == mcq_word.question:
+            return mcq
+    return None
+
+def find_cloze_exercise_by_word(word, sentence):
+    for cloze in word.cloze_exercises:
+        if cloze.sentence == sentence:
+            return cloze
+    return None
+
+def get_mcq_correct_answer_by_mcq_answer_id(mcq, mcq_answer):
+    if mcq_answer == mcq.option1:
+        return mcq.option1
+    elif mcq_answer == mcq.option2:
+        return mcq.option2
+    elif mcq_answer == mcq.option3:
+        return mcq.option3
+    elif mcq_answer == mcq.option4:
+        return mcq.option4
+    return None
+
+def get_writing_exercise_by_word(word, prompt):
+    for writing in word.writing_exercises:
+        if writing.prompt == prompt:
+            return writing
+    return None
