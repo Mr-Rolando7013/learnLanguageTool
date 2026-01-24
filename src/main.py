@@ -7,7 +7,7 @@ load_dotenv(env_path)
 
 from src.model import *
 from flask import Flask, render_template, request, jsonify, url_for, redirect
-from datetime import datetime
+from datetime import datetime, timedelta
 from reviewLogic import *
 
 app = Flask(__name__, template_folder='../templates')
@@ -91,8 +91,21 @@ def start_review():
         return "No deck selected", 400
     
     deck = getDeckById(deck_id)
+    today = datetime.now().date()
+    words = []
 
-    words = [word for word in deck.words if word.isLearned == 0 and word.last_date_reviewed != datetime.now().strftime('%Y-%m-%d')]
+    for word in deck.words:
+        intervalWord = word.interval
+        intervalDate = today + timedelta(days=intervalWord)
+        intervalDateStr = intervalDate.strftime('%Y-%m-%d')
+
+        # Convert last_date_reviewed string to date if it exists
+        if word.last_date_reviewed:
+            last_reviewed = datetime.strptime(word.last_date_reviewed, "%Y-%m-%d").date()
+        else:
+            last_reviewed = None
+        if word.isLearned == 0 and last_reviewed != today and intervalDate <= today:
+            words.append(word)
 
     return render_template("reviewDeck.html", words=words, deck=deck)
 
@@ -183,16 +196,16 @@ def submit_review():
     data = request.get_json()
 
     word_id = data["word_id"]
+    word = getWordById(word_id)
     answers = data["answers"]
     score = data["score"]
 
     print(f"Word ID: {word_id}, Answers: {answers}, Score: {score}")
-    #TODO
-    elf = calculate_new_ef_interval(data, getWordById(word_id))
+    outputData = calculate_new_ef_interval(data, word)
+    word.last_date_reviewed = datetime.now().strftime('%Y-%m-%d')
+    session.commit()
 
-    #calculate_new_ef_interval(data)
-
-    return jsonify({"status:": "ok"})
+    return jsonify({"status:": "ok", "data":outputData})
 
 if __name__ == '__main__':
     app.run(debug=True)

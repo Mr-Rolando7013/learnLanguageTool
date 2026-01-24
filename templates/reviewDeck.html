@@ -388,20 +388,13 @@ function prevStep(button) {
     word.querySelector(".currentStep").textContent = index;
 }
 
-function finishReview(button) {
+async function finishReview(button) {
     const step = button.closest(".step");
     const word = button.closest(".word-review");
     const steps = word.querySelectorAll(".step");
 
     step.classList.remove("active");
     steps[steps.length - 1].classList.add("active");
-
-    word.querySelector(".score").textContent =
-        Math.floor(Math.random() * 40) + 60;
-}
-
-async function submitResults(button) {
-    const word = button.closest(".word-review");
 
     // Collect all responses
     const responses = [];
@@ -442,10 +435,21 @@ async function submitResults(button) {
         if (!res.ok) {
             console.error("Server returned an error:", res.status);
         }
+
+        const data = await res.json();
+        console.log("Backend response:", data.data);
+        const score = data.data.score;
+        word.querySelector(".score").textContent = score;        
     } catch (err) {
         console.error("Failed to submit review", err);
     }
 
+}
+
+async function submitResults(button) {
+    const word = button.closest(".word-review");
+
+    
     // move to next word
     word.classList.remove("active");
     const nextWord = word.nextElementSibling;

@@ -113,7 +113,7 @@ class Word(Base):
     last_date_reviewed = Column(String, nullable=True)
     isLearned = Column(Integer, default=0)
     ef = Column(Integer, default=2.5)
-    interval = Column(Integer, default=1)
+    interval = Column(Integer, default=0)
 
     decks = relationship(
         "Deck",
@@ -197,7 +197,7 @@ def getWordById(word_id):
 
 def find_mcq_exercise_by_word(word, mcq_word):
     for mcq in word.mcq_exercises:
-        if mcq.question == mcq_word.question:
+        if mcq.question == mcq_word:
             return mcq
     return None
 
