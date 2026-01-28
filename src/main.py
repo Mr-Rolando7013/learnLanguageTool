@@ -182,7 +182,7 @@ def get_writing(word_id):
     # If none exists, generate one
     if writing is None:
         writing = generate_writing_exercise(word)
-        word.writing.append(writing)
+        word.writing.add(writing)
         session.commit()
 
     # Return as a list for consistency with frontend

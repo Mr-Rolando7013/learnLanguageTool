@@ -65,10 +65,11 @@ class WritingExercise(Base):
     date_created = Column(String, nullable=False)
     isSolved = Column(Integer, default=0)
 
-    word = relationship(
+    words = relationship(
         "Word",
-        secondary="writing_exercise_words",
-        backref="writing_exercises"
+        secondary=writing_exercise_words,
+        back_populates="writing",
+        collection_class=set
     )
 
     def __repr__(self):
@@ -100,7 +101,7 @@ class Word(Base):
     __tablename__ = 'words'
     
     id = Column(Integer, primary_key=True)
-    word = Column(String, unique=True, nullable=False)
+    word = Column(String, unique=False, nullable=False)
     dictionary_definition = Column(String, nullable=False)
     translation = Column(String, nullable=False)
     sentence1 = Column(String, nullable=False)
@@ -130,7 +131,8 @@ class Word(Base):
     writing = relationship(
         "WritingExercise",
         secondary=writing_exercise_words,
-        backref="words"
+        back_populates="words",
+        collection_class=set
     )
 
     cloze = relationship(
