@@ -9,7 +9,6 @@ from src.model import *
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from datetime import datetime, timedelta
 from reviewLogic import *
-from collections import defaultdict
 
 app = Flask(__name__, template_folder='../templates')
 
@@ -55,7 +54,7 @@ def add_word_to_deck(deck_id):
     sentence3 = request.form.get('sentence3')
     sentence3_translation = request.form.get('sentence3_translation')
     now = datetime.now().strftime('%Y-%m-%d')
-    
+
     if word_text and translation:
         new_word = Word(
             word=word_text,
@@ -69,43 +68,9 @@ def add_word_to_deck(deck_id):
             sentence3_translation=sentence3_translation,
             date_created=now
         )
-        word_id = add_instance(new_word)
+        add_instance(new_word)
         deck.words.append(new_word)
         session.commit()
-        mcqData = []
-        clozeData = []
-        exerciseData = []
-        word = getWordById(word_id)
-
-        while len(mcqData) < 2:
-            mcq = generate_mcq_exercise(word)
-
-            # prevent duplicate association
-            if mcq not in word.mcq:
-                word.mcq.append(mcq)
-            # I can delete this
-            mcqData.append({
-                "question": mcq.question,
-                "option1": mcq.option1,
-                "option2": mcq.option2,
-                "option3": mcq.option3,
-                "option4": mcq.option4,
-                "correct_answer": mcq.correct_answer
-            })
-        while len(clozeData) < 2:
-            cloze = generate_cloze_exercise(word)
-
-            if cloze not in word.cloze:
-                word.cloze.append(cloze)
-
-            clozeData.append({
-                "sentence": cloze.sentence,
-                "answer": cloze.answer
-            })
-
-        writing = generate_writing_exercise(word)
-        word.writing.add(writing)
-    session.commit()
 
     return redirect(url_for('deck_detail', deck_id=deck_id))
 
@@ -117,10 +82,6 @@ def edit_word(word_id):
 def review_words():
     decks = getDecks()
     return render_template('listDecks.html', decks=decks)
-
-def chunked(iterable, size):
-    for i in range(0, len(iterable), size):
-        yield iterable[i:i + size]
 
 @app.route("/review/start", methods=["GET"])
 def start_review():
@@ -146,19 +107,9 @@ def start_review():
         if word.isLearned == 0 and last_reviewed != today and intervalDate <= today:
             words.append(word)
 
-    mcqs = []
-    clozes = []
-    writings = []
-    for word in words:
-        get_mcq(word.id)
-        get_cloze(word.id)
-        get_writing(word.id)
-    
-    chunks = list(chunked(words, 5))
+    return render_template("reviewDeck.html", words=words, deck=deck)
 
-    return render_template("reviewDeck.html", chunks=chunks, deck=deck)
-
-# La guardamos para el futuro.
+@app.route('/review/word/mcq/<int:word_id>', methods=['GET'])
 def get_mcq(word_id):
     returnData = []
     word = getWordById(word_id)
@@ -194,8 +145,9 @@ def get_mcq(word_id):
 
     session.commit()
 
-    return returnData[:2]
+    return jsonify(returnData[:2])
 
+@app.route('/review/word/cloze/<int:word_id>', methods=['GET'])
 def get_cloze(word_id):
     returnData = []
     word = getWordById(word_id)
@@ -218,8 +170,9 @@ def get_cloze(word_id):
             "answer": cloze.answer
         })
     session.commit()
-    return returnData[:2]
+    return jsonify(returnData[:2])
 
+@app.route('/review/word/writing/<int:word_id>', methods=['GET'])
 def get_writing(word_id):
     word = getWordById(word_id)
 
@@ -233,59 +186,26 @@ def get_writing(word_id):
         session.commit()
 
     # Return as a list for consistency with frontend
-    return [{
+    return jsonify([{
         "id": writing.id,
         "prompt": writing.prompt
-    }]
+    }])
 
 @app.route('/review/submit', methods=['POST'])
 def submit_review():
     data = request.get_json()
-    outputs = []
-    weighted_total = 8.7
 
-    for answer in data["responses"]:
-        #print("ANSWER:::", answer)
-        word_id = answer["word_id"]
-        word = getWordById(word_id)
+    word_id = data["word_id"]
+    word = getWordById(word_id)
+    answers = data["answers"]
+    score = data["score"]
 
-        outputs.append(calculate_new_ef_interval(answer, word_id))
-    
-    sums_by_word = defaultdict(float)
-    for entry in outputs:
-        sums_by_word[entry["word_id"]] += entry["weighted_correct"]
+    print(f"Word ID: {word_id}, Answers: {answers}, Score: {score}")
+    outputData = calculate_new_ef_interval(data, word)
+    word.last_date_reviewed = datetime.now().strftime('%Y-%m-%d')
+    session.commit()
 
-    sums_by_word = dict(sums_by_word)
-
-    for word_id, weighted_correct_sum in sums_by_word.items():
-        score = weighted_correct_sum / weighted_total
-        word = getWordById(word_id)
-        
-        interval = word.interval
-        if interval == 0:
-            interval = 1
-        ef = word.ef
-
-        if score >= 0.85:
-            interval = interval * ef * 1.3
-            ef = ef + 0.05
-            word.isLearned = 1
-        elif 0.70 <= score < 0.85:
-            interval = interval * ef
-        elif 0.50 < score < 0.70:
-            interval = interval * 1.2
-            ef = ef - 0.1
-        else:
-            ef = ef - 0.2
-            interval = 1
-
-        word.ef = ef
-        word.interval = interval
-        word.last_date_reviewed = datetime.now().strftime('%Y-%m-%d')
-        session.commit()
-
-
-    return jsonify({"status:": "ok", "data":score})
+    return jsonify({"status:": "ok", "data":outputData})
 
 if __name__ == '__main__':
     app.run(debug=True)

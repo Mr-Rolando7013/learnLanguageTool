@@ -171,6 +171,7 @@ session = Session()
 def add_instance(instance):
     session.add(instance)
     session.commit()
+    return instance.id
 
 def getWritingExercises():
     return session.query(WritingExercise).all()
@@ -210,18 +211,13 @@ def find_cloze_exercise_by_word(word, sentence):
     return None
 
 def get_mcq_correct_answer_by_mcq_answer_id(mcq, mcq_answer):
-    if mcq_answer == mcq.option1:
-        return mcq.option1
-    elif mcq_answer == mcq.option2:
-        return mcq.option2
-    elif mcq_answer == mcq.option3:
-        return mcq.option3
-    elif mcq_answer == mcq.option4:
-        return mcq.option4
+    mcq_correct_answer = mcq.correct_answer
+    if mcq_answer == mcq_correct_answer:
+        return True
     return None
 
 def get_writing_exercise_by_word(word, prompt):
-    for writing in word.writing_exercises:
+    for writing in word.writing:
         if writing.prompt == prompt:
             return writing
     return None

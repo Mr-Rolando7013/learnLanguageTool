@@ -6,82 +6,54 @@ from datetime import datetime
 import random
 
 def calculate_new_ef_interval(data, word):
-    myWord = getWordById(word.id)
-    interval = myWord.interval
-    if interval == 0:
-        interval = 1
-    ef = myWord.ef
-    weighted_total = 8.7
+    myWord = getWordById(word)
+    #print("DATA CALCULATE: ", data)
     weighted_correct = 0.0
-    mcq1 = find_mcq_exercise_by_word(myWord, data["answers"][2]["question"])
-    mcq2 = find_mcq_exercise_by_word(myWord, data["answers"][3]["question"])
-    mcq1_correct_answer = get_mcq_correct_answer_by_mcq_answer_id(mcq1, data["answers"][2]["answer"])
-    mcq2_correct_answer = get_mcq_correct_answer_by_mcq_answer_id(mcq2, data["answers"][3]["answer"])
 
-    cloze1 = find_cloze_exercise_by_word(myWord, data["answers"][5]["question"])
-    cloze2 = find_cloze_exercise_by_word(myWord, data["answers"][7]["question"])
+    if data["step"] == "translation":
+        if data["answer"] == myWord.translation:
+            weighted_correct += 1.0
 
-    writing1 = get_writing_exercise_by_word(myWord, data["answers"][8]["question"])
+    if data["step"] == "sentence1":
+        if data["answer"] == myWord.sentence1_translation:
+            weighted_correct += 1.0
 
-    if mcq1_correct_answer is None or mcq2_correct_answer is None or cloze1 is None or cloze2 is None or writing1 is None:
-        print("Error: Could not find exercises for calculation.")
-        return {
-            "new_ef": ef,
-            "new_interval": interval,
-            "score": 0.0
-        }
+    if data["step"] == "sentence2":
+        if data["answer"] == myWord.sentence2_translation:
+            weighted_correct += 1.0
+
+    if data["step"] == "sentence3":
+        if data["answer"] == myWord.sentence3_translation:
+            weighted_correct += 1.0
+
+    if data["step"] == "mcq1":
+        mcq1 = find_mcq_exercise_by_word(myWord, data["question"])
+        mcq1_correct_answer = get_mcq_correct_answer_by_mcq_answer_id(mcq1, data["answer"])
+        if mcq1_correct_answer:
+            weighted_correct += 0.6
+
+    if data["step"] == "mcq2":
+        mcq2 = find_mcq_exercise_by_word(myWord, data["question"])
+        mcq2_correct_answer = get_mcq_correct_answer_by_mcq_answer_id(mcq2, data["answer"])
+        if mcq2_correct_answer:
+            weighted_correct += 0.6
+
+    if data["step"] == "cloze1":
+        cloze1 = find_cloze_exercise_by_word(myWord, data["question"])
+        if data["answer"] == cloze1.answer:
+            weighted_correct += 1.0
+
+    if data["step"] == "cloze2":
+        cloze2 = find_cloze_exercise_by_word(myWord, data["question"])
+        if data["answer"] == cloze2.answer:
+            weighted_correct += 1.0
+
+    if data["step"] == "writing":
+        writing1 = get_writing_exercise_by_word(myWord, data["question"])
+        if data["answer"] == writing1.answer:
+            weighted_correct += 1.5
     
-    if data["answers"][0]["answer"] == myWord.translation:
-        weighted_correct += 1.0
-
-    if data["answers"][1]["answer"] == myWord.sentence1_translation:
-        weighted_correct += 1.0
-
-    if data["answers"][2]["answer"] == mcq1_correct_answer:
-        weighted_correct += 0.6
-
-    if data["answers"][3]["answer"] == mcq2_correct_answer:
-        weighted_correct += 0.6
-
-    if data["answers"][4]["answer"] == myWord.sentence2_translation:
-        weighted_correct += 1.0
-
-    if data["answers"][5]["answer"] == cloze1.answer:
-        weighted_correct += 1.0
-
-    if data["answers"][6]["answer"] == myWord.sentence3_translation:
-        weighted_correct += 1.0
-
-    if data["answers"][7]["answer"] == cloze2.answer:
-        weighted_correct += 1.0
-
-    if data["answers"][8]["answer"] == writing1.answer:
-        weighted_correct += 1.5
-    score = weighted_correct / weighted_total
-
-    if score >= 0.85:
-        interval = interval * ef * 1.3
-        ef = ef + 0.05
-        word.isLearned = 1
-    elif score >= 0.70 and score < 0.85:
-        interval = interval * ef
-    elif score > 0.50 and score < 0.70:
-        interval = interval * 1.2
-        ef = ef - 0.1
-    else:
-        ef = ef - 0.2
-        interval = 1
-
-    word.interval = interval
-    word.ef = ef
-
-    print("Weighted correct:", weighted_correct, "score: ", score, "new ef:", ef, "new interval:", interval)
-    outputData = {
-        "new_ef": ef,
-        "new_interval": interval,
-        "score": round(score, 2)
-    }
-    return outputData
+    return {"word_id": word, "weighted_correct": weighted_correct}
     
 def generate_mcq_exercise(word):
     mcq_types = [
