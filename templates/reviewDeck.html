@@ -89,6 +89,12 @@
         .word-card.active {
         display: block;
         }
+
+        .result-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        }
     </style>
 </head>
 <body>
@@ -96,60 +102,43 @@
 <div class="review-container">
 
 {% for chunk in chunks %}
+{% set word_index = loop.index0 %}
 <div class="chunk-review {% if loop.first %}active{% endif %}">
+    <!-- Progress -->
     <div class="progress">
-        Card <span class="currentStep">1</span> / <span class="totalSteps">9</span>
+        Card <span class="currentStep">1</span> / <span class="totalSteps">{{ chunk|length }}</span>
     </div>
 
-    <!-- TRANSLATION -->
-    <div class="step active translation-step">
-    {% for word in chunk %}
-        <div class="word-card {% if loop.first %}active{% endif %}"
-            data-word-id="{{ word.id }}">
+    <!-- TRANSLATION STEP -->
+    <div class="step translation-step {% if loop.first %}active{% endif %}">
+        {% for word in chunk %}
+        <div class="word-card {% if loop.first %}active{% endif %}" data-word-id="{{ word.id }}">
+            <h3>{{ word.word }}</h3>
+            <div class="prompt">Translate:</div>
+            <input data-step="translation" data-type="translation" data-question="Translate {{ word.word }}" />
 
-        <h3>{{ word.word }}</h3>
-
-        <div class="prompt">Translate:</div>
-        <input
-        data-step="translation"
-        data-type="translation"
-        data-question="Translate {{ word.word }}"
-        />
-
-        {% if word.sentence1 %}
+            {% if word.sentence1 %}
             <div class="prompt"><strong>{{ word.sentence1 }}</strong></div>
-            <input
-            data-step="sentence1"
-            data-type="sentence"
-            data-question="{{ word.sentence1 }}"
-            />
-        {% endif %}
+            <input data-step="sentence1" data-type="sentence" data-question="{{ word.sentence1 }}" />
+            {% endif %}
 
-        {% if word.sentence2 %}
+            {% if word.sentence2 %}
             <div class="prompt"><strong>{{ word.sentence2 }}</strong></div>
-            <input
-            data-step="sentence2"
-            data-type="sentence"
-            data-question="{{ word.sentence2 }}"
-            />
-        {% endif %}
+            <input data-step="sentence2" data-type="sentence" data-question="{{ word.sentence2 }}" />
+            {% endif %}
 
-        {% if word.sentence3 %}
+            {% if word.sentence3 %}
             <div class="prompt"><strong>{{ word.sentence3 }}</strong></div>
-            <input
-            data-step="sentence3"
-            data-type="sentence"
-            data-question="{{ word.sentence3 }}"
-            />
-        {% endif %}
+            <input data-step="sentence3" data-type="sentence" data-question="{{ word.sentence3 }}" />
+            {% endif %}
         </div>
-    {% endfor %}
+        {% endfor %}
 
-    <div class="center">
-        <button onclick="prevWord(this)">Previous</button>
-        <button onclick="nextWord(this)">Next</button>
+        <div class="center">
+            <button onclick="prevWord(this)">Previous</button>
+            <button onclick="nextWord(this)">Next</button>
+        </div>
     </div>
-</div>
 
 
     <!-- MCQ Exercise 1 -->
@@ -229,17 +218,18 @@
     <button onclick="finishChunk(this)">Finish</button>
     </div>
 
-    
+    <div class="step results-step">
+        <h2>Chunk Results</h2>
+
+        <div class="results-list"></div>
+
+        <div class="center">
+            <button onclick="nextChunk(this)">Continue</button>
+        </div>
+    </div>
 
 </div>
 {% endfor %}
-    <!-- FINISH -->
-    <div class="step center">
-        <h2>Review Complete 🎉</h2>
-        <p>Your answers have been recorded.</p>
-        <p><strong>Score:</strong> <span class="score">–</span>%</p>
-        <button onclick="submitResults(this)">Next Word</button>
-    </div>
 
 </div>
 
@@ -249,7 +239,6 @@ function nextWord(btn) {
   const step = btn.closest(".step");
   const cards = [...step.querySelectorAll(".word-card")];
   const active = step.querySelector(".word-card.active");
-
   const idx = cards.indexOf(active);
   if (idx === -1) return;
 
@@ -258,9 +247,32 @@ function nextWord(btn) {
   if (cards[idx + 1]) {
     cards[idx + 1].classList.add("active");
   } else {
-    // Last word → move to next step (MCQ)
+    // Move to next step in this chunk
     step.classList.remove("active");
-    step.nextElementSibling.classList.add("active");
+    const chunk = btn.closest(".chunk-review");
+    const steps = [...chunk.querySelectorAll(".step")];
+    const stepIdx = steps.indexOf(step);
+    if (steps[stepIdx + 1]) steps[stepIdx + 1].classList.add("active");
+  }
+}
+
+function prevStep(btn) {
+  const step = btn.closest(".step");
+  const chunk = btn.closest(".chunk-review");
+  const steps = [...chunk.querySelectorAll(".step")];
+  const idx = steps.indexOf(step);
+
+  if (idx <= 0) return; // already at first step
+
+  step.classList.remove("active");
+  steps[idx - 1].classList.add("active");
+
+  // if previous step is translation-step, activate last word-card
+  const prevStepEl = steps[idx - 1];
+  if (prevStepEl.classList.contains("translation-step")) {
+    const cards = [...prevStepEl.querySelectorAll(".word-card")];
+    cards.forEach(c => c.classList.remove("active"));
+    if (cards.length) cards[cards.length - 1].classList.add("active");
   }
 }
 
@@ -276,57 +288,77 @@ function nextStep(btn) {
   steps[idx + 1].classList.add("active");
 }
 
-function prevWord(btn) {
-  const step = btn.closest(".step");
-  const cards = [...step.querySelectorAll(".word-card")];
-  const active = step.querySelector(".word-card.active");
-
-  const idx = cards.indexOf(active);
-  if (idx <= 0) return;
-
-  active.classList.remove("active");
-  cards[idx - 1].classList.add("active");
-}
-
-function finishChunk(btn) {
+async function finishChunk(btn) {
   const chunk = btn.closest(".chunk-review");
   const responses = [];
 
-  chunk.querySelectorAll("[data-word-id]").forEach(block => {
-    const wordId = block.dataset.wordId;
+  chunk.querySelectorAll("input, textarea").forEach(input => {
+    if (!input.value?.trim()) return;
+    if (!input.value?.trim()) return;
 
-    block.querySelectorAll("input, textarea").forEach(input => {
-      // radio: only collect checked
-      if (input.type === "radio" && !input.checked) return;
+    const wordBlock = input.closest("[data-word-id]");
+    if (!wordBlock) return;
 
-      responses.push({
-        word_id: wordId,
-        step: input.dataset.step,
-        type: input.dataset.type || null,
-        exercise_id: input.dataset.exerciseId || null,
-        question: input.dataset.question || null,
-        answer: input.value
-      });
+    responses.push({
+      word_id: wordBlock.dataset.wordId,
+      step: input.dataset.step,
+      type: input.dataset.type,
+      exercise_id: input.dataset.exerciseId || null,
+      question: input.dataset.question || null,
+      answer: input.value?.trim() || ""
     });
   });
 
-  fetch("/review/submit", {
+  const res = await fetch("/review/submit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ responses })
   });
 
-  // Move to next chunk
-  chunk.classList.remove("active");
-  const next = chunk.nextElementSibling;
-
-  if (next) {
-    next.classList.add("active");
-    next.querySelector(".step")?.classList.add("active");
-  } else {
-    alert("Session complete 🎉");
-  }
+  const data = await res.json(); // ← contains scores
+  console.log("FinishChunk response:", data.data);
+  showChunkResults(chunk, data.data);
 }
+
+function showChunkResults(chunk, results) {
+  const steps = [...chunk.querySelectorAll(".step")];
+  steps.forEach(s => s.classList.remove("active"));
+
+  const resultsStep = chunk.querySelector(".results-step");
+  const list = resultsStep.querySelector(".results-list");
+
+  list.innerHTML = "";
+
+  if (!results || results.length === 0) {
+    list.innerHTML = "<p>No results available.</p>";
+  } else {
+    results.forEach(r => {
+      list.innerHTML += `
+        <div class="result-row">
+          <strong>${r.word || "Word"}</strong>
+          <span>${r.score != null ? r.score + "%" : "N/A"}</span>
+        </div>
+      `;
+    });
+  }
+
+  resultsStep.classList.add("active");
+}
+
+function nextChunk(btn) {
+  const chunk = btn.closest(".chunk-review");
+  chunk.classList.remove("active");
+
+  const next = chunk.nextElementSibling;
+  if (!next) {
+    alert("Session complete 🎉");
+    return;
+  }
+
+  next.classList.add("active");
+  next.querySelector(".step")?.classList.add("active");
+}
+
 
 
 

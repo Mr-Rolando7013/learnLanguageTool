@@ -108,6 +108,38 @@ def generate_mcq_exercise(word):
         {"role": "system", "content": "You create MCQs for language learning."},
         {"role": "user", "content": prompt}
     ],
+     response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "mcq_exercise",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "description": "English question asking for the meaning of the Romanian word"
+                    },
+                    "choices": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 4,
+                        "maxItems": 4,
+                        "description": "Exactly four answer choices in English"
+                    },
+                    "correct_index": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3,
+                        "description": "Index of the correct answer in the choices array"
+                    }
+                },
+                "required": ["question", "choices", "correct_index"],
+                "additionalProperties": False
+            }
+        }
+    },
     temperature=0.9,
     max_tokens=300
     )
@@ -180,7 +212,27 @@ Rules:
             {"role": "system", "content": "You create cloze exercises for language learners."},
             {"role": "user", "content": prompt}
         ],
-        response_format={"type": "json_object"},
+        response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "cloze_exercise",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "sentence": {
+                        "description": "Romanian sentence with ___ replacing the target word",
+                        "type": "string"
+                    },
+                    "answer": {
+                        "description": "The missing word",
+                        "type": "string"
+                    }
+                },
+                "required": ["sentence", "answer"],
+                "additionalProperties": False
+            }
+        }
+    },
         temperature=0.8,
         max_tokens=200
     )
@@ -247,7 +299,23 @@ def generate_writing_exercise(word):
             {"role": "system", "content": "You create writing exercises for language learners."},
             {"role": "user", "content": prompt}
         ],
-        response_format={"type": "json_object"},
+        response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "writing_exercise",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "A vivid Romanian writing prompt that requires using the target word"
+                    }
+                },
+                "required": ["prompt"],
+                "additionalProperties": False
+            }
+        }
+    },
         temperature=0.9,
         max_tokens=250
     )

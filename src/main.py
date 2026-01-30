@@ -122,6 +122,7 @@ def chunked(iterable, size):
     for i in range(0, len(iterable), size):
         yield iterable[i:i + size]
 
+# Logic of last reviewed is messed up
 @app.route("/review/start", methods=["GET"])
 def start_review():
     deck_id = request.args.get("deck_id")
@@ -243,9 +244,10 @@ def submit_review():
     data = request.get_json()
     outputs = []
     weighted_total = 8.7
+    outputData = []
 
     for answer in data["responses"]:
-        #print("ANSWER:::", answer)
+        print("ANSWER:::", answer)
         word_id = answer["word_id"]
         word = getWordById(word_id)
 
@@ -258,6 +260,7 @@ def submit_review():
     sums_by_word = dict(sums_by_word)
 
     for word_id, weighted_correct_sum in sums_by_word.items():
+        temp = {}
         score = weighted_correct_sum / weighted_total
         word = getWordById(word_id)
         
@@ -278,14 +281,17 @@ def submit_review():
         else:
             ef = ef - 0.2
             interval = 1
-
+        temp["word"] = word.word
+        temp["score"] = score
         word.ef = ef
         word.interval = interval
         word.last_date_reviewed = datetime.now().strftime('%Y-%m-%d')
         session.commit()
+        outputData.append(temp)
+    print("OuputData: ", outputData)
 
 
-    return jsonify({"status:": "ok", "data":score})
+    return jsonify({"status:": "ok", "data":outputData})
 
 if __name__ == '__main__':
     app.run(debug=True)
