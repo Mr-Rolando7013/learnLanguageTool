@@ -144,12 +144,9 @@ def start_review():
             last_reviewed = datetime.strptime(word.last_date_reviewed, "%Y-%m-%d").date()
         else:
             last_reviewed = None
-        if word.isLearned == 0 and last_reviewed != today and intervalDate <= today:
+        if word.isLearned == 0 and intervalDate <= today:
             words.append(word)
 
-    mcqs = []
-    clozes = []
-    writings = []
     for word in words:
         get_mcq(word.id)
         get_cloze(word.id)
@@ -265,8 +262,7 @@ def submit_review():
         word = getWordById(word_id)
         
         interval = word.interval
-        if interval == 0:
-            interval = 1
+        
         ef = word.ef
 
         if score >= 0.85:
@@ -282,6 +278,7 @@ def submit_review():
             ef = ef - 0.2
             interval = 1
         temp["word"] = word.word
+        score = round(score, 2)
         temp["score"] = score
         word.ef = ef
         word.interval = interval

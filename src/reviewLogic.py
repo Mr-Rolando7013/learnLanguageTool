@@ -56,114 +56,112 @@ def calculate_new_ef_interval(data, word):
     return {"word_id": word, "weighted_correct": weighted_correct}
     
 def generate_mcq_exercise(word):
-    mcq_types = [
-        "direct definition",
-        "context-based meaning",
-        "false friend confusion",
-        "same part of speech distractors",
-        "near-synonym vs exact meaning",
+    MCQ_ARCHETYPES = [
+        "Ask directly for the meaning of the Romanian word in English.",
+        "Include a short Romanian sentence using the word and ask what it most likely means in that context.",
+        "Ask which option is NOT a correct meaning of the word.",
+        "Ask which English option best matches the word’s usage, not its definition.",
+        "Test a close nuance by offering near-synonyms and asking for the exact meaning."
     ]
-    mcq_type = random.choice(mcq_types)
-    if mcq_type == "false friend confusion":
-        extra_rule = "Wrong answers must look similar to the Romanian word but have different meanings."
 
-    elif mcq_type == "same part of speech distractors":
-        extra_rule = "All choices must be the same part of speech."
+    # Pick a random archetype each call
+    archetype_rule = random.choice(MCQ_ARCHETYPES)
 
-    elif mcq_type == "context-based meaning":
-        extra_rule = "The question must include a short Romanian sentence using the word."
-
-    elif mcq_type == "near-synonym vs exact meaning":
-        extra_rule = "Wrong answers should be close in meaning but not exact."
-
-    else:
-        extra_rule = "Use clear but non-obvious distractors."
-    word_name = word.word
     prompt = f"""
-        Create a Romanian vocabulary multiple choice question.
+    You are generating a Romanian vocabulary multiple choice question.
 
-        Target word: "{word_name}"
-        MCQ type: {mcq_type}
+    Target word: "{word.word}"
 
-        Return ONLY valid JSON with this structure:
-        {{
+    Instruction:
+    {archetype_rule}
+
+    Return ONLY valid JSON with this structure:
+    {{
         "question": "...",
         "choices": ["...", "...", "...", "..."],
         "correct_index": 0
-        }}
+    }}
 
-        Rules:
-        - Ask for the meaning of the word in English
-        - Exactly 4 choices
-        - Only ONE choice is correct
-        - Wrong answers must be plausible but clearly incorrect
-        - Avoid repeating common patterns or phrasing
-        - correct_index must be 0-3
-        - {extra_rule}
+    Rules:
+    - Exactly 4 choices
+    - Only ONE choice is correct
+    - Distractors must be plausible but clearly incorrect
+    - Avoid paraphrasing standard definition questions
+    - Avoid starting questions with "What does" unless explicitly required
+    - Vary the task being tested, not just the wording
+    - Make the phrasing of the question different each time
+    - Avoid always placing the correct answer first
     """
+
     client = OpenAIApi().get_client()
-    response = client.chat.completions.create(
-    model="gpt-4.1-mini",
-    messages=[
-        {"role": "system", "content": "You create MCQs for language learning."},
-        {"role": "user", "content": prompt}
-    ],
-     response_format={
-        "type": "json_schema",
-        "json_schema": {
-            "name": "mcq_exercise",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "question": {
-                        "type": "string",
-                        "description": "English question asking for the meaning of the Romanian word"
-                    },
-                    "choices": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
+    existing_questions = [mcq.question.lower() for mcq in word.mcq]
+
+    attempts = 0
+    MAX_ATTEMPTS = 5
+    while attempts < MAX_ATTEMPTS:
+        attempts += 1
+
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+                {"role": "system", "content": "You create diverse vocabulary MCQs for language learners."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "mcq_exercise",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "question": {"type": "string"},
+                            "choices": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "minItems": 4,
+                                "maxItems": 4
+                            },
+                            "correct_index": {"type": "integer", "minimum": 0, "maximum": 3}
                         },
-                        "minItems": 4,
-                        "maxItems": 4,
-                        "description": "Exactly four answer choices in English"
-                    },
-                    "correct_index": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 3,
-                        "description": "Index of the correct answer in the choices array"
+                        "required": ["question", "choices", "correct_index"],
+                        "additionalProperties": False
                     }
-                },
-                "required": ["question", "choices", "correct_index"],
-                "additionalProperties": False
-            }
-        }
-    },
-    temperature=0.9,
-    max_tokens=300
-    )
+                }
+            },
+            temperature=1.0,  # higher temperature → more randomness
+            max_tokens=300
+        )
 
-    content = response.choices[0].message.content
+        data = json.loads(response.choices[0].message.content)
+        question_text = data["question"].lower()
 
-    data = json.loads(content)
+        # Reject duplicates
+        if not any(question_text in q or q in question_text for q in existing_questions):
+            break
+    else:
+        print("⚠️ Could not generate a unique MCQ after retries")
+
+    # Shuffle choices for extra randomness
+    choices = data["choices"][:]
+    correct_answer = choices[data["correct_index"]]
+    random.shuffle(choices)
+    new_correct_index = choices.index(correct_answer)
 
     new_mcq = MultipleChoiceExercise(
         question=data["question"],
-        option1=data["choices"][0],
-        option2=data["choices"][1],
-        option3=data["choices"][2],
-        option4=data["choices"][3],
-        correct_answer=data["choices"][data["correct_index"]],
+        option1=choices[0],
+        option2=choices[1],
+        option3=choices[2],
+        option4=choices[3],
+        correct_answer=correct_answer,
         date_created=datetime.now().strftime('%Y-%m-%d')
     )
-
-    print("Data from OpenAI:", data)
 
     add_instance(new_mcq)
     word.mcq.append(new_mcq)
     session.commit()
 
+    print("Generated MCQ:", data)
     return new_mcq
 
 def generate_cloze_exercise(word):

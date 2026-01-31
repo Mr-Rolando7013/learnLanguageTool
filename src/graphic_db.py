@@ -39,7 +39,7 @@ def load_table():
         rows = session.query(Word).all()
         for w in rows:
             tree.insert("", tk.END, values=(
-                w.id, w.word, w.translation, w.isLearned, w.date_created, w.last_date_reviewed, w.interval
+                w.id, w.word, w.translation, w.isLearned, w.date_created, w.last_date_reviewed, w.interval, w.sentence1, w.sentence1_translation, w.sentence2, w.sentence2_translation, w.sentence3, w.sentence3_translation
             ))
     elif table == "Deck":
         rows = session.query(Deck).all()
@@ -63,7 +63,7 @@ def configure_columns(*args):
     table = selected_table.get()
 
     if table == "Word":
-        tree["columns"] = ("ID", "Word", "Translation", "Learned", "Created", "Last Reviewed", "Interval")
+        tree["columns"] = ("ID", "Word", "Translation", "Learned", "Created", "Last Reviewed", "Interval", "Sentence 1", "Sentence 1 translation", "Sentence 2", "Sentence 2 translation", "Sentence 3", "Sentence 3 translation")
     elif table == "Deck":
         tree["columns"] = ("ID", "Name", "Description", "Created")
     elif table == "MultipleChoiceExercise":
