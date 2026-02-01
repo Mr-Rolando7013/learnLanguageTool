@@ -241,10 +241,12 @@ def submit_review():
     data = request.get_json()
     outputs = []
     weighted_total = 8.7
+    weighted_total_without_one_sentence = 7.7
+    weighted_total_without_two_sentences = 6.7
     outputData = []
 
     for answer in data["responses"]:
-        print("ANSWER:::", answer)
+        #print("ANSWER:::", answer)
         word_id = answer["word_id"]
         word = getWordById(word_id)
 
@@ -252,13 +254,34 @@ def submit_review():
     
     sums_by_word = defaultdict(float)
     for entry in outputs:
-        sums_by_word[entry["word_id"]] += entry["weighted_correct"]
+        word_id = entry["word_id"]
+    
+        # Initialize dictionary for each word_id if not already there
+        if word_id not in sums_by_word:
+            sums_by_word[word_id] = {
+                "weighted_correct_sum": 0.0,
+                "isSentence2": entry["isSentence2"],
+                "isSentence3": entry["isSentence3"]
+            }
+    
+        # Add the weighted_correct value to the sum for the current word_id
+        sums_by_word[word_id]["weighted_correct_sum"] += entry["weighted_correct"]
 
     sums_by_word = dict(sums_by_word)
+    print("TESTTT", sums_by_word)
 
-    for word_id, weighted_correct_sum in sums_by_word.items():
+    for word_id, values in sums_by_word.items():
         temp = {}
-        score = weighted_correct_sum / weighted_total
+        if values["isSentence2"] == True and values["isSentence3"] == True:
+            score = values["weighted_correct_sum"] / weighted_total
+
+        elif (values["isSentence2"] == True and values["isSentence3"] == False) or (values["isSentence2"] == False and values["isSentence3"] == True):
+            score = values["weighted_correct_sum"] / weighted_total_without_one_sentence
+        else:
+            print("Helloooo")
+            score = values["weighted_correct_sum"] / weighted_total_without_two_sentences
+        
+
         word = getWordById(word_id)
         
         interval = word.interval

@@ -9,6 +9,8 @@ def calculate_new_ef_interval(data, word):
     myWord = getWordById(word)
     #print("DATA CALCULATE: ", data)
     weighted_correct = 0.0
+    isSentence2 = False
+    isSentence3 = False
 
     if data["step"] == "translation":
         if data["answer"] == myWord.translation:
@@ -20,9 +22,11 @@ def calculate_new_ef_interval(data, word):
 
     if data["step"] == "sentence2":
         if data["answer"] == myWord.sentence2_translation:
+            isSentence2 = True
             weighted_correct += 1.0
 
     if data["step"] == "sentence3":
+        isSentence3 = True
         if data["answer"] == myWord.sentence3_translation:
             weighted_correct += 1.0
 
@@ -50,10 +54,12 @@ def calculate_new_ef_interval(data, word):
 
     if data["step"] == "writing":
         writing1 = get_writing_exercise_by_word(myWord, data["question"])
-        if data["answer"] == writing1.answer:
+        grade = review_writing_exercise(writing1, data["answer"])
+        print("GRADEEE: ", grade)
+        if grade > 7.0:
             weighted_correct += 1.5
     
-    return {"word_id": word, "weighted_correct": weighted_correct}
+    return {"word_id": word, "weighted_correct": weighted_correct, "isSentence2": isSentence2, "isSentence3": isSentence3}
     
 def generate_mcq_exercise(word):
     MCQ_ARCHETYPES = [
@@ -331,3 +337,51 @@ def generate_writing_exercise(word):
     session.commit()
 
     return new_writing
+
+def review_writing_exercise(writing_exercise, user_reply):
+    prompt = f"""
+    You are a Romanian teacher and you need to check if the following reply: "{user_reply}" is correct based on the following writing question prompt: "{writing_exercise.prompt}"
+    
+    Rules:
+    - Give me a numerical grade from 0.0 (worst) to 10.0 (perfect).
+    - Grade this question based on grammar, spelling, and correct context.
+    - Spelling is less impactful to the grade.
+    - Proper grammar and correct context are the most important.
+    - Please only provide the numerical grade, without any explanation or extra text.
+    """
+
+    # Create an OpenAI API client
+    client = OpenAIApi().get_client()
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert Romanian language teacher."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.9,
+        max_tokens=50,
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "grading_writing_exercise",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "grade": {
+                            "type": "string",
+                            "description": "The score of an answer that a language student provided for a romanian writing exercise"
+                        }
+                    },
+                    "required": ["grade"],
+                    "additionalProperties": False
+                }
+            }
+        }
+    )
+    content = response.choices[0].message.content
+    data = json.loads(content)
+    print("GRADE RESPONSE", data)
+
+    grade = float(data["grade"])
+
+    return grade
