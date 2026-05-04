@@ -42,18 +42,29 @@ def remove_word_from_deck(deck_id, word_id):
     deleteWordFromDeck(deck_id, word_id)
     return redirect(url_for('deck_detail', deck_id=deck_id))
 
+def normalize_sentence(text):
+    if not text:
+        return text
+    text = text.strip().lower()
+    if text.endswith('.'):
+        text = text[:-1]
+    return text
+
 @app.route('/deck_detail/<int:deck_id>/words/add', methods=['POST'])
 def add_word_to_deck(deck_id):
     deck = getDeckById(deck_id)
     word_text = request.form.get('word')
     dictionary_definition = request.form.get('dictionary_definition')
     translation = request.form.get('translation')
-    sentence1 = request.form.get('sentence1')
-    sentence1_translation = request.form.get('sentence1_translation')
-    sentence2 = request.form.get('sentence2')
-    sentence2_translation = request.form.get('sentence2_translation')
-    sentence3 = request.form.get('sentence3')
-    sentence3_translation = request.form.get('sentence3_translation')
+
+    sentence1 = normalize_sentence(request.form.get('sentence1'))
+    sentence1_translation = normalize_sentence(request.form.get('sentence1_translation'))
+
+    sentence2 = normalize_sentence(request.form.get('sentence2'))
+    sentence2_translation = normalize_sentence(request.form.get('sentence2_translation'))
+
+    sentence3 = normalize_sentence(request.form.get('sentence3'))
+    sentence3_translation = normalize_sentence(request.form.get('sentence3_translation'))
     now = datetime.now().strftime('%Y-%m-%d')
     
     if word_text and translation:

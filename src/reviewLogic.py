@@ -5,6 +5,14 @@ from model import *
 from datetime import datetime
 import random
 
+def normalize_sentence(text):
+    if not text:
+        return text
+    text = text.strip().lower()
+    if text.endswith('.'):
+        text = text[:-1]
+    return text
+
 def calculate_new_ef_interval(data, word):
     myWord = getWordById(word)
     #print("DATA CALCULATE: ", data)
@@ -13,21 +21,21 @@ def calculate_new_ef_interval(data, word):
     isSentence3 = False
 
     if data["step"] == "translation":
-        if data["answer"] == myWord.translation:
+        if normalize_sentence(data["answer"]) == myWord.translation:
             weighted_correct += 1.0
 
     if data["step"] == "sentence1":
-        if data["answer"] == myWord.sentence1_translation:
+        if normalize_sentence(data["answer"]) == myWord.sentence1_translation:
             weighted_correct += 1.0
 
     if data["step"] == "sentence2":
-        if data["answer"] == myWord.sentence2_translation:
+        if normalize_sentence(data["answer"]) == myWord.sentence2_translation:
             isSentence2 = True
             weighted_correct += 1.0
 
     if data["step"] == "sentence3":
         isSentence3 = True
-        if data["answer"] == myWord.sentence3_translation:
+        if normalize_sentence(data["answer"]) == myWord.sentence3_translation:
             weighted_correct += 1.0
 
     if data["step"] == "mcq1":
